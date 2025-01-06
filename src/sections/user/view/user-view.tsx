@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -8,116 +8,168 @@ import TableBody from '@mui/material/TableBody';
 import Typography from '@mui/material/Typography';
 import TableContainer from '@mui/material/TableContainer';
 import TablePagination from '@mui/material/TablePagination';
+import CircularProgress from '@mui/material/CircularProgress';
 
-import { _users } from 'src/_mock';
 import { DashboardContent } from 'src/layouts/dashboard';
-
-import { Iconify } from 'src/components/iconify';
 import { Scrollbar } from 'src/components/scrollbar';
 
-import { TableNoData } from '../table-no-data';
-import { UserTableRow } from '../user-table-row';
-import { UserTableHead } from '../user-table-head';
-import { TableEmptyRows } from '../table-empty-rows';
-import { UserTableToolbar } from '../user-table-toolbar';
-import { emptyRows, applyFilter, getComparator } from '../utils';
-
-import type { UserProps } from '../user-table-row';
-
-// ----------------------------------------------------------------------
+const DATA_URL = 'https://webapplication2-old-pond-3577.fly.dev/api/Scholarships';
 
 export function UserView() {
   const table = useTable();
-
   const [filterName, setFilterName] = useState('');
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const dataFiltered: UserProps[] = applyFilter({
-    inputData: _users,
-    comparator: getComparator(table.order, table.orderBy),
-    filterName,
-  });
+  // Fetch data from API
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await fetch(DATA_URL);
+        const result = await response.json();
+        setData(result);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
-  const notFound = !dataFiltered.length && !!filterName;
+  const dataFiltered = data.filter((row) =>
+    row.title.toLowerCase().includes(filterName.toLowerCase())
+  );
 
   return (
     <DashboardContent>
       <Box display="flex" alignItems="center" mb={5}>
         <Typography variant="h4" flexGrow={1}>
-          Users
+          Programs
         </Typography>
-        <Button
-          variant="contained"
-          color="inherit"
-          startIcon={<Iconify icon="mingcute:add-line" />}
-        >
-          New user
+        <Button variant="contained" color="inherit">
+          Add Program
         </Button>
       </Box>
 
       <Card>
-        <UserTableToolbar
-          numSelected={table.selected.length}
-          filterName={filterName}
-          onFilterName={(event: React.ChangeEvent<HTMLInputElement>) => {
-            setFilterName(event.target.value);
-            table.onResetPage();
-          }}
-        />
+        <Box px={3} py={2}>
+          <input
+            type="text"
+            value={filterName}
+            placeholder="Search by Title"
+            onChange={(e) => {
+              setFilterName(e.target.value);
+              table.onResetPage();
+            }}
+            style={{
+              width: '100%',
+              padding: '8px',
+              borderRadius: '4px',
+              border: '1px solid #ccc',
+            }}
+          />
+        </Box>
 
-        <Scrollbar>
-          <TableContainer sx={{ overflow: 'unset' }}>
-            <Table sx={{ minWidth: 800 }}>
-              <UserTableHead
-                order={table.order}
-                orderBy={table.orderBy}
-                rowCount={_users.length}
-                numSelected={table.selected.length}
-                onSort={table.onSort}
-                onSelectAllRows={(checked) =>
-                  table.onSelectAllRows(
-                    checked,
-                    _users.map((user) => user.id)
-                  )
-                }
-                headLabel={[
-                  { id: 'name', label: 'Name' },
-                  { id: 'company', label: 'Company' },
-                  { id: 'role', label: 'Role' },
-                  { id: 'isVerified', label: 'Verified', align: 'center' },
-                  { id: 'status', label: 'Status' },
-                  { id: '' },
-                ]}
-              />
-              <TableBody>
-                {dataFiltered
-                  .slice(
-                    table.page * table.rowsPerPage,
-                    table.page * table.rowsPerPage + table.rowsPerPage
-                  )
-                  .map((row) => (
-                    <UserTableRow
-                      key={row.id}
-                      row={row}
-                      selected={table.selected.includes(row.id)}
-                      onSelectRow={() => table.onSelectRow(row.id)}
-                    />
-                  ))}
-
-                <TableEmptyRows
-                  height={68}
-                  emptyRows={emptyRows(table.page, table.rowsPerPage, _users.length)}
-                />
-
-                {notFound && <TableNoData searchQuery={filterName} />}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Scrollbar>
+        {loading ? (
+          <Box display="flex" justifyContent="center" py={5}>
+            <CircularProgress />
+          </Box>
+        ) : (
+          <Scrollbar>
+            <TableContainer>
+              <Table sx={{ minWidth: 800 }} border={1}>
+                <thead>
+                  <tr>
+                    <th>Title</th>
+                    <th>Country</th>
+                    <th>University</th>
+                    <th>Major</th>
+                    <th>Funding</th>
+                    <th>Type</th>
+                    <th>Level</th>
+                    <th>Language Tests</th>
+                    <th>Images</th>
+                    <th>Course Value</th>
+                    <th>University Details</th>
+                    <th>Qualifications</th>
+                    <th>University Website</th>
+                    <th>Department Head</th>
+                    <th>Contact Professors</th>
+                  </tr>
+                </thead>
+                <TableBody>
+                  {dataFiltered
+                    .slice(
+                      table.page * table.rowsPerPage,
+                      table.page * table.rowsPerPage + table.rowsPerPage
+                    )
+                    .map((row) => (
+                      <tr key={row.id.timestamp}>
+                        <td>{row.title}</td>
+                        <td>{row.country}</td>
+                        <td>{row.university}</td>
+                        <td>{row.major}</td>
+                        <td>{row.funding}</td>
+                        <td>{row.type}</td>
+                        <td>{row.level}</td>
+                        <td>{row.languageTests.join(', ')}</td>
+                        <td>{row.images.join(', ')}</td>
+                        <td>{row.courseValue}</td>
+                        <td>{row.universityDetails}</td>
+                        <td>{row.qualifications}</td>
+                        <td>
+                          <a href={row.universityWebsite} target="_blank" rel="noopener noreferrer">
+                            {row.universityWebsite}
+                          </a>
+                        </td>
+                        <td>
+                          <b>Name:</b> {row.departmentHead.name}
+                          <br />
+                          <b>Position:</b> {row.departmentHead.position}
+                          <br />
+                          <b>Email:</b> {row.departmentHead.email}
+                          <br />
+                          <b>Research:</b> {row.departmentHead.research}
+                          <br />
+                          <b>Office:</b> {row.departmentHead.office}
+                        </td>
+                        <td>
+                          {row.contactProfessors.map((prof, index) => (
+                            <div key={index}>
+                              <b>Name:</b> {prof.name}
+                              <br />
+                              <b>Position:</b> {prof.position}
+                              <br />
+                              <b>Email:</b> {prof.email}
+                              <br />
+                              <b>Research:</b> {prof.research}
+                              <br />
+                              <b>Office:</b> {prof.office}
+                              <br />
+                              <hr />
+                            </div>
+                          ))}
+                        </td>
+                      </tr>
+                    ))}
+                  {dataFiltered.length === 0 && (
+                    <tr>
+                      <td colSpan={15} style={{ textAlign: 'center', padding: '16px' }}>
+                        No data found.
+                      </td>
+                    </tr>
+                  )}
+                </TableBody>
+              </Table>
+            </TableContainer>
+          </Scrollbar>
+        )}
 
         <TablePagination
           component="div"
           page={table.page}
-          count={_users.length}
+          count={dataFiltered.length}
           rowsPerPage={table.rowsPerPage}
           onPageChange={table.onChangePage}
           rowsPerPageOptions={[5, 10, 25]}
@@ -128,53 +180,20 @@ export function UserView() {
   );
 }
 
-// ----------------------------------------------------------------------
-
 export function useTable() {
   const [page, setPage] = useState(0);
-  const [orderBy, setOrderBy] = useState('name');
   const [rowsPerPage, setRowsPerPage] = useState(5);
-  const [selected, setSelected] = useState<string[]>([]);
-  const [order, setOrder] = useState<'asc' | 'desc'>('asc');
-
-  const onSort = useCallback(
-    (id: string) => {
-      const isAsc = orderBy === id && order === 'asc';
-      setOrder(isAsc ? 'desc' : 'asc');
-      setOrderBy(id);
-    },
-    [order, orderBy]
-  );
-
-  const onSelectAllRows = useCallback((checked: boolean, newSelecteds: string[]) => {
-    if (checked) {
-      setSelected(newSelecteds);
-      return;
-    }
-    setSelected([]);
-  }, []);
-
-  const onSelectRow = useCallback(
-    (inputValue: string) => {
-      const newSelected = selected.includes(inputValue)
-        ? selected.filter((value) => value !== inputValue)
-        : [...selected, inputValue];
-
-      setSelected(newSelected);
-    },
-    [selected]
-  );
 
   const onResetPage = useCallback(() => {
     setPage(0);
   }, []);
 
-  const onChangePage = useCallback((event: unknown, newPage: number) => {
+  const onChangePage = useCallback((_, newPage) => {
     setPage(newPage);
   }, []);
 
   const onChangeRowsPerPage = useCallback(
-    (event: React.ChangeEvent<HTMLInputElement>) => {
+    (event) => {
       setRowsPerPage(parseInt(event.target.value, 10));
       onResetPage();
     },
@@ -183,15 +202,9 @@ export function useTable() {
 
   return {
     page,
-    order,
-    onSort,
-    orderBy,
-    selected,
     rowsPerPage,
-    onSelectRow,
     onResetPage,
     onChangePage,
-    onSelectAllRows,
     onChangeRowsPerPage,
   };
 }
